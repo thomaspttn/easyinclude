@@ -32,8 +32,9 @@ need to think about paths, mounts, and ports. wouldn't be a bad thing to do in a
 image_name: my_image
 exposed_port: 6900
 mount:
-/home/root/
 ```
+
+Need to expose the mount mapping for damn sure!! Docker path : User path or something like that
 
 need to verify clangd both locally and in the container so that's some work 🍳
 
@@ -47,3 +48,13 @@ Ok nvm `nvim` seems to call the same shit
 
 
  ~/clangd_17.0.3/bin/clangd-index-server --server-address 127.0.0.1:50051 --log=verbose proj.idx /home/root/libmodal-cv
+
+Users will also need to:
+Building/releases#
+The client and server require the gRPC libraries. Because of this dependency, they are not enabled by default in CMake.
+
+To build remote-index-enabled clangd and clangd-index-server, you need:
+
+gRPC libraries (e.g. apt install libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc or brew install grpc protobuf or build from source)
+to set the -DCLANGD_ENABLE_REMOTE=On and possibly -DGRPC_INSTALL_PATH CMake flags
+The clangd releases on GitHub include remote index support, but official LLVM releases do not (yet).
