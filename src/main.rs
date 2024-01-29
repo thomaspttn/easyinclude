@@ -1,9 +1,28 @@
 use std::fs;
 use clap::{arg, command, Command};
-// sub_matches.get_one::<String>("NAME")
 
 fn status() {
     println!("The status is... we're chilling duh")
+}
+
+fn collect_include_paths() -> Result<(), std::io::Error> {
+    let incl_command = "gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'";
+
+    let output = std::process::Command::new("docker")
+        .args(&["exec", "id", "sh", "-c", incl_command])
+        .output()?;
+
+    let include_lines = String::from_utf8_lossy(&output.stdout).lines();
+
+    for includepath in include_lines {
+        let incl_output = std::process::Command::new("docker")
+            .args(&["cp", "id", "sh", "-c", incl_command])
+            .output()?;
+    }
+        
+
+
+    Ok(())
 }
 
 fn init() {
@@ -13,8 +32,6 @@ fn init() {
 fn deinit () {
 
 }
-
-
 
 fn main() {
     let matches = command!() 
