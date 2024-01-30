@@ -1,8 +1,17 @@
-use std::fs;
 use clap::{arg, command, Command};
 
 fn status() {
     println!("The status is... we're chilling duh")
+}
+
+fn list_docker_containers() -> Result<(), std::io::Error> {
+    let output = std::process::Command::new("docker").args(&["ps"]).output()?;
+
+    let output_string = String::from_utf8(output.stdout)?;
+
+    // let output_string = String::from_utf8_lossy(&output.stdout);
+    // println!("Docker Containers :: {}", output_string);
+    // Ok(())
 }
 
 fn collect_include_paths() -> Result<(), std::io::Error> {
@@ -12,29 +21,27 @@ fn collect_include_paths() -> Result<(), std::io::Error> {
         .args(&["exec", "id", "sh", "-c", incl_command])
         .output()?;
 
-    let include_lines = String::from_utf8_lossy(&output.stdout).lines();
+    let output_string = String::from_utf8_lossy(&output.stdout);
+    let include_lines = output_string.lines();
 
     for includepath in include_lines {
         let incl_output = std::process::Command::new("docker")
             .args(&["cp", "id", "sh", "-c", incl_command])
             .output()?;
     }
-        
-
 
     Ok(())
 }
 
 fn init() {
-    fs::create_dir("~/.easyinclude");
+    list_docker_containers();
+    collect_include_paths();
 }
 
-fn deinit () {
-
-}
+fn deinit() {}
 
 fn main() {
-    let matches = command!() 
+    let matches = command!()
         .propagate_version(true)
         .subcommand_required(true)
         .arg_required_else_help(true)
@@ -58,13 +65,16 @@ fn main() {
     match matches.subcommand() {
         Some(("status", _sub_matches)) => {
             println!("status... nice");
-        },
+            status();
+        }
         Some(("init", _sub_matches)) => {
             println!("init... nice");
-        },
+            init();
+        }
         Some(("deinit", _sub_matches)) => {
             println!("deinit... nice");
-        },
+            deinit();
+        }
         _ => unreachable!("Exhausted list of subcommands and subcommand_required prevents `None`"),
     }
 }
