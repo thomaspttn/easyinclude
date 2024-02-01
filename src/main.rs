@@ -31,17 +31,27 @@ fn status() {
     println!("The status is... we're chilling duh")
 }
 
-fn list_docker_containers() -> Result<EasyIncludeError> {
-    let output = std::process::Command::new("docker").args(&["ps"]).output()?;
+fn list_docker_containers() -> Result<()> {
+
+    // gets the id of the first running container
+    let output = std::process::Command::new("docker")
+        .arg("ps")
+        .arg("--format")
+        .arg("{{.ID}}")
+        .arg("--filter")
+        .arg("status=running")
+        .output()?;
 
     let output_string = String::from_utf8(output.stdout)?;
 
+    let x = output_string.lines().next().ok_or("No lines?")?;
+
     // let output_string = String::from_utf8_lossy(&output.stdout);
-    // println!("Docker Containers :: {}", output_string);
+    println!("Docker Containers :: {}", x);
     Ok(())
 }
 
-fn collect_include_paths() -> Result<std::io::Error> {
+fn collect_include_paths() -> Result<()> {
     let incl_command = "gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'";
 
     let output = std::process::Command::new("docker")
