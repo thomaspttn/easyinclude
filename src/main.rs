@@ -1,20 +1,47 @@
 use clap::{arg, command, Command};
+use std::error::Error;
+use std::fmt;
+
+type Result<T> = std::result::Result<T, EasyIncludeError>;
+
+#[derive(Debug, Clone)]
+struct EasyIncludeError {
+    details: String
+}
+
+impl EasyIncludeError {
+    fn new(error: &str) -> Self {
+        EasyIncludeError{ details: error.to_string() }
+    }
+}
+
+impl fmt::Display for EasyIncludeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl<E: Error> From<E> for EasyIncludeError {
+    fn from(error: E) -> Self {
+        EasyIncludeError::new(&error.to_string())
+    }
+}
 
 fn status() {
     println!("The status is... we're chilling duh")
 }
 
-fn list_docker_containers() -> Result<(), std::io::Error> {
+fn list_docker_containers() -> Result<EasyIncludeError> {
     let output = std::process::Command::new("docker").args(&["ps"]).output()?;
 
     let output_string = String::from_utf8(output.stdout)?;
 
     // let output_string = String::from_utf8_lossy(&output.stdout);
     // println!("Docker Containers :: {}", output_string);
-    // Ok(())
+    Ok(())
 }
 
-fn collect_include_paths() -> Result<(), std::io::Error> {
+fn collect_include_paths() -> Result<std::io::Error> {
     let incl_command = "gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'";
 
     let output = std::process::Command::new("docker")
