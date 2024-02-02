@@ -31,7 +31,7 @@ fn status() {
     println!("The status is... we're chilling duh")
 }
 
-fn list_docker_containers() -> Result<()> {
+fn list_docker_containers() -> Result<String> {
 
     // gets the id of the first running container
     let output = std::process::Command::new("docker")
@@ -44,35 +44,38 @@ fn list_docker_containers() -> Result<()> {
 
     let output_string = String::from_utf8(output.stdout)?;
 
-    let x = output_string.lines().next().ok_or("No lines?")?;
-
-    // let output_string = String::from_utf8_lossy(&output.stdout);
-    println!("Docker Containers :: {}", x);
-    Ok(())
+    println!("Docker Containers :: {}", output_string);
+    Ok(output_string)
 }
 
-fn collect_include_paths() -> Result<()> {
-    let incl_command = "gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'";
+fn collect_include_paths(id: &str) -> Result<()> {
+    let incl_command = r#"gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'"#;
 
     let output = std::process::Command::new("docker")
-        .args(&["exec", "id", "sh", "-c", incl_command])
+        .args(&["exec", id.trim(), "sh", "-c", incl_command])
         .output()?;
 
-    let output_string = String::from_utf8_lossy(&output.stdout);
+    let output_string = String::from_utf8(output.stdout)?;
+    
+
     let include_lines = output_string.lines();
+    println!("got here");
 
     for includepath in include_lines {
-        let incl_output = std::process::Command::new("docker")
-            .args(&["cp", "id", "sh", "-c", incl_command])
-            .output()?;
+        println!("--- {}", includepath);
+        // let incl_output = std::process::Command::new("docker")
+        //     .args(&["cp", id, "sh", "-c", incl_command])
+        //     .output()?;
     }
 
     Ok(())
 }
 
-fn init() {
-    list_docker_containers();
-    collect_include_paths();
+fn init() -> Result<()> {
+    let container_id = list_docker_containers()?;
+    collect_include_paths(&container_id)?;
+
+    Ok(())
 }
 
 fn deinit() {}
