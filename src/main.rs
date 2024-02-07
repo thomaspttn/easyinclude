@@ -31,6 +31,8 @@ fn status() {
     println!("The status is... we're chilling duh")
 }
 
+// gets the id of the running docker container
+// TODO: make more robust, obviously
 fn list_docker_containers() -> Result<String> {
 
     // gets the id of the first running container
@@ -59,7 +61,6 @@ fn collect_include_paths(id: &str) -> Result<()> {
     
 
     let include_lines = output_string.lines();
-    println!("got here");
 
     for includepath in include_lines {
         println!("--- {}", includepath);
