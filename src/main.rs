@@ -1,6 +1,9 @@
 use clap::{arg, command, Command};
 use std::error::Error;
 use std::fmt;
+use std::fs::{self, DirEntry};
+use std::path::Path;
+use dirs;
 
 type Result<T> = std::result::Result<T, EasyIncludeError>;
 
@@ -53,17 +56,36 @@ fn list_docker_containers() -> Result<String> {
 fn collect_include_paths(id: &str) -> Result<()> {
     let incl_command = r#"gcc -E -xc++ - -v </dev/null 2>&1 | grep -E '^ /'"#;
 
+    // get include paths from inside container
     let output = std::process::Command::new("docker")
         .args(&["exec", id.trim(), "sh", "-c", incl_command])
         .output()?;
-
     let output_string = String::from_utf8(output.stdout)?;
-    
-
     let include_lines = output_string.lines();
 
-    for includepath in include_lines {
-        println!("--- {}", includepath);
+    // get local home directory + .easyinclude
+    let easyincludedir = dirs::home_dir().unwrap().join(".easyinclude");
+
+    for raw_include_path in include_lines {
+        let clean_include_path = raw_include_path
+            .split_whitespace()
+            .next()
+            .map(|s| s.trim().strip_prefix("/usr/").unwrap().to_owned())
+            .unwrap();
+
+        println!("--- {}", clean_include_path);
+        // let dst_dir = easyincludedir.join(clean_include_path);
+        let full_path = easyincludedir.join(&clean_include_path);
+
+        println!("--- {}", full_path.display());
+
+
+
+
+
+
+
+
         // let incl_output = std::process::Command::new("docker")
         //     .args(&["cp", id, "sh", "-c", incl_command])
         //     .output()?;
