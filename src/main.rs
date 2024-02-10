@@ -101,7 +101,13 @@ fn init() -> Result<()> {
     Ok(())
 }
 
-fn deinit() {}
+fn deinit() -> Result<()> {
+    let easyincludedir = dirs::home_dir().unwrap().join(".easyinclude");
+    fs::remove_dir_all(easyincludedir)?;
+    Ok(())
+}
+
+
 
 fn main() {
     let matches = command!()
