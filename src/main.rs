@@ -1,9 +1,11 @@
 use clap::{arg, command, Command};
 use std::error::Error;
+use std::ffi::{OsStr, OsString};
 use std::fmt;
-use std::fs::{self, DirEntry};
-use std::path::Path;
+use std::fs;
+use walkdir::WalkDir;
 use dirs;
+use serde::{Serialize, Deserialize};
 
 type Result<T> = std::result::Result<T, EasyIncludeError>;
 
@@ -29,6 +31,19 @@ impl<E: Error> From<E> for EasyIncludeError {
         EasyIncludeError::new(&error.to_string())
     }
 }
+
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CompileCommand {
+    directory: String,
+    command: Option<String>, 
+    arguments: Option<Vec<String>>, 
+    file: String,
+}
+
+type CompileCommands = Vec<CompileCommand>;
+
+
 
 fn status() {
     println!("The status is... we're chilling duh")
@@ -94,16 +109,59 @@ fn collect_include_paths(id: &str) -> Result<()> {
     Ok(())
 }
 
+fn find_compile_commands() -> Result<Vec<OsString>> {
+    let mut return_paths : Vec<OsString> = Vec::new();
+
+    // recursively look for compile commands files
+    let compile_commands = OsStr::new("compile_commands.json");
+    for entry in WalkDir::new("/Users/thomas/git/modalai")
+        .into_iter()
+        .filter_map(|e| e.ok()) 
+    {
+        let path = entry.path();
+        if path.is_file() {
+            let file_name = path.file_name().unwrap();
+            if file_name == compile_commands {
+                return_paths.push(path.as_os_str().to_os_string());
+                println!("Found compile commands at :: {}", path.display());
+            }
+        }
+    }
+    Ok(return_paths)
+}
+
+fn update_compile_commands(compile_commands_path: &OsStr) -> Result<()> {
+
+    // make a backup of the current compile commands (duh)
+    let mut path_string = compile_commands_path.to_os_string();
+    path_string.push(".bak");
+    let _ = std::fs::copy(compile_commands_path, path_string);
+    
+    // read JSON into a string
+    let json_data = fs::read_to_string(compile_commands_path)?;
+
+
+    Ok(())
+}
+
+
 fn init() -> Result<()> {
+
+    // extract container ID and use it to collect include paths
     let container_id = list_docker_containers()?;
     collect_include_paths(&container_id)?;
+
+    // gather directories with compile commands for iterative replacement
+    let _compile_commands_dirs = find_compile_commands()?;
+
 
     Ok(())
 }
 
 fn deinit() -> Result<()> {
-    let easyincludedir = dirs::home_dir().unwrap().join(".easyinclude");
-    fs::remove_dir_all(easyincludedir)?;
+    let _easyincludedir = dirs::home_dir().unwrap().join(".easyinclude");
+    // TODO: REMOVE WITH CAREFUL VERIFICATION
+    // fs::remove_dir_all(easyincludedir)?;
     Ok(())
 }
 
