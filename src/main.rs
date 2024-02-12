@@ -140,6 +140,12 @@ fn update_compile_commands(compile_commands_path: &OsStr) -> Result<()> {
     // read JSON into a string
     let json_data = fs::read_to_string(compile_commands_path)?;
 
+    let config: CompileCommand = serde_json::from_str(&json_data)?;
+
+    let updated_json = serde_json::to_string_pretty(&config)?;
+
+    println!("{}", updated_json);
+
 
     Ok(())
 }
