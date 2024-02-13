@@ -36,9 +36,8 @@ impl<E: Error> From<E> for EasyIncludeError {
 #[derive(Serialize, Deserialize, Debug)]
 struct CompileCommand {
     directory: String,
-    command: Option<String>, 
-    arguments: Option<Vec<String>>, 
-    file: String,
+    arguments: Vec<String>, 
+    file: String
 }
 
 type CompileCommands = Vec<CompileCommand>;
@@ -82,6 +81,7 @@ fn collect_include_paths(id: &str) -> Result<()> {
     let easyincludedir = dirs::home_dir().unwrap().join(".easyinclude");
 
     for raw_include_path in include_lines {
+        println!("*** {}", raw_include_path);
         let clean_include_path = raw_include_path
             .split_whitespace()
             .next()
@@ -130,7 +130,7 @@ fn find_compile_commands() -> Result<Vec<OsString>> {
     Ok(return_paths)
 }
 
-fn update_compile_commands(compile_commands_path: &OsStr) -> Result<()> {
+fn update_compile_commands(compile_commands_path: &OsStr, mount_path: &str) -> Result<()> {
 
     // make a backup of the current compile commands (duh)
     let mut path_string = compile_commands_path.to_os_string();
@@ -139,12 +139,30 @@ fn update_compile_commands(compile_commands_path: &OsStr) -> Result<()> {
     
     // read JSON into a string
     let json_data = fs::read_to_string(compile_commands_path)?;
+    let compile_commands: CompileCommands = serde_json::from_str(&json_data)?;
 
-    let config: CompileCommand = serde_json::from_str(&json_data)?;
+    // for command in compile_commands {
+    //     for argument in command.arguments {
+    //         if argument.starts_with("-I") { // filter include paths!
+    //             println!("{}", argument);
+    //         }
+    //     }
+    // }
+    let include_mount_path = "-I".to_string() + mount_path;
+    compile_commands.iter()
+        .flat_map(|c| &c.arguments)
+        .filter(|a| a.starts_with("-I"))
+        .for_each(|a| {
+            if a.starts_with(&include_mount_path) {
+                println!("omg omg {}", a);
+            } else {
+                println!("ok {}", a);
+            }
+        });
 
-    let updated_json = serde_json::to_string_pretty(&config)?;
+    // let updated_json = serde_json::to_string_pretty(&config)?;
 
-    println!("{}", updated_json);
+    // println!("hehexd {:?}", compile_commands);
 
 
     Ok(())
@@ -152,13 +170,13 @@ fn update_compile_commands(compile_commands_path: &OsStr) -> Result<()> {
 
 
 fn init() -> Result<()> {
-
     // extract container ID and use it to collect include paths
     let container_id = list_docker_containers()?;
     collect_include_paths(&container_id)?;
 
     // gather directories with compile commands for iterative replacement
     let _compile_commands_dirs = find_compile_commands()?;
+    let _ = update_compile_commands(&_compile_commands_dirs[0], "/home/root/voxl-tflite-server");
 
 
     Ok(())
